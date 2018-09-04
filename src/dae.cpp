@@ -133,11 +133,8 @@ void DAE::init()
     
     ff->calc_ndof();
     a_tol_sqrt_nc_dof=a_tol*sqrt(static_cast<type0>(ff->nc_dof));
-    int n=ff->nx_dof+ff->nalpha_dof;
-    Algebra::DoLT<__dim__>::func([this,&n](int i,int j)
-    {if(!std::isnan(S[i][j])) ++n;});
-    sqrt_nx_nalpha_nS_dof=sqrt(static_cast<type0>(n));
-    a_tol_sqrt_nx_nalpha_nS_dof=a_tol*sqrt_nx_nalpha_nS_dof;
+    sqrt_nx_nalpha_dof=sqrt(static_cast<type0>(ff->nx_dof+ff->nalpha_dof));
+    a_tol_sqrt_nx_nalpha_dof=a_tol*sqrt_nx_nalpha_dof;
 }
 /*--------------------------------------------
  
@@ -161,234 +158,69 @@ void DAE::fin()
 /*--------------------------------------------
  
  --------------------------------------------*/
-type0 DAE::calc_err()
+void DAE::min_error()
 {
-    if(!chng_box) return ff->err/sqrt_nx_nalpha_nS_dof;
-    type0 err_sq=0.0;
-    type0 (&S_fe)[__dim__][__dim__]=atoms->S_fe;
-    Algebra::DoLT<__dim__>::func([&S_fe,&err_sq,this](int i,int j)
-    {if(!std::isnan(S[i][j])) err_sq+=(S[i][j]-S_fe[i][j])*(S[i][j]-S_fe[i][j]);});
-    err_sq*=(atoms->vol)*(atoms->vol);
-    err_sq+=(ff->err)*(ff->err);
-    return sqrt(err_sq)/sqrt_nx_nalpha_nS_dof;
-}
-/*--------------------------------------------
- 
- --------------------------------------------*/
-void DAE::min_error_true()
-{
+    
 #ifdef MINCG_W_NEWTON
     int __step=atoms->step;
     min->run(10000);
     atoms->step=__step;
 #endif
     
-    VecTens<type0,2> x(atoms,true,atoms->H,atoms->x,atoms->alpha);
-    VecTens<type0,2> f(atoms,true,ff->F_H,ff->f,ff->f_alpha);
-    VecTens<type0,2> h(atoms,true,__dim__,c_dim);
-
-#ifndef NEW_UPDTAE
+    VecTens<type0,2> x(atoms,chng_box,atoms->H,atoms->x,atoms->alpha);
+    VecTens<type0,2> f(atoms,chng_box,ff->f,ff->f_alpha);
+    VecTens<type0,2> h(atoms,chng_box,__dim__,c_dim);
+    
     vec* uvecs[2];
     uvecs[0]=atoms->x;
     uvecs[1]=atoms->alpha;
-#endif
-    type0 norm,res,res_sq;
+    type0 norm,res;
     
-    __GMRES__<VecTens<type0,2>> gmres(max_ngmres_iters,atoms,true,__dim__,c_dim);
-/*
-    auto J=[this](VecTens<type0,2>& dx,VecTens<type0,2>& Jdx)->void
-    {
-#ifdef OLD_UPDATE
-        dynamic->update(dx.vecs[0],dx.A);
-        dynamic->update(dx.vecs[1]);
-#else
-        dynamic->update(dx.A,dx.vecs[0],dx.vecs[1]);
-#endif
-        
-        type0* __vec=ff->J(dx.vecs[0],dx.vecs[1],Jdx.vecs[0],Jdx.vecs[1]);
-        Algebra::DyadicV_2_MLT(__vec,Jdx.A);
-        
-        type0 dlog_vol=0.0;
-        type0 (&H)[__dim__][__dim__]=atoms->H;
-    
-        Algebra::Do<__dim__>::func([&H,&dx,&dlog_vol](int i)
-        {
-            dlog_vol+=dx.A[i][i]/H[i][i];
-        });
-
-        type0 tmp=dlog_vol*atoms->vol;
-        Algebra::DoLT<__dim__>::func([&Jdx,&tmp,this](int i,int j)
-        {
-            if(!S_dof[i][j]) Jdx.A[i][j]=0.0;
-            else Jdx.A[i][j]-=S[i][j]*tmp;
-        });
-    };
-*/
-    auto J=[this](VecTens<type0,2>& dx,VecTens<type0,2>& Jdx)->void
-    {
-#ifdef OLD_UPDATE
-        dynamic->update(dx.vecs[0]);
-        dynamic->update(dx.vecs[1]);
-#else
-        dynamic->update(dx.vecs[0],dx.vecs[1]);
-#endif
-        const int n=atoms->natms_lcl+atoms->natms_ph;
-        type0* __dx=dx.vecs[0]->begin();
-        type0* __x=atoms->x->begin();
-        for(int i=0;i<n;i++,__dx+=__dim__,__x+=__dim__)
-            Algebra::V_mul_MLT_add_in(__x,dx.A,__dx);
-        
-        
-        type0* __vec=ff->J(dx.vecs[0],dx.vecs[1],Jdx.vecs[0],Jdx.vecs[1]);
-        Algebra::DyadicV_2_MLT(__vec,Jdx.A);
-        
-        type0 dlog_vol=0.0;
-        type0 (&H)[__dim__][__dim__]=atoms->H;
-    
-        Algebra::Do<__dim__>::func([&H,&dx,&dlog_vol](int i)
-        {
-            dlog_vol+=dx.A[i][i];
-        });
-
-        type0 tmp=dlog_vol*atoms->vol;
-        Algebra::DoLT<__dim__>::func([&Jdx,&tmp,this](int i,int j)
-        {
-            if(!S_dof[i][j]) Jdx.A[i][j]=0.0;
-            else Jdx.A[i][j]-=S[i][j]*tmp;
-        });
-    };
-    
-    res_sq=ff->prepJ_n_res(f.vecs[0],f.vecs[1]);
-    type0 vol_neg=-atoms->vol;
-    Algebra::DoLT<__dim__>::func([&res_sq,&f,this,&vol_neg](int i,int j)
-     {
-         if(!std::isnan(S[i][j]))
-         {
-             f.A[i][j]=ff->F_H[i][j]-S[i][j]*vol_neg;
-             res_sq+=f.A[i][j]*f.A[i][j];
-         }
-         else
-             f.A[i][j]=0.0;
-     });
-    
-    
-    res=sqrt(res_sq);
-    
-    type0 r;
-    int istep=0;
-    for(;istep<max_nnewton_iters && res/a_tol_sqrt_nx_nalpha_nS_dof>1.0;istep++)
-    {
-        gmres.solve(J,f,0.005*a_tol_sqrt_nx_nalpha_nS_dof,norm,h);
-        
-        const int n0=atoms->natms_lcl;
-        type0* __x=atoms->x->begin();
-        type0* __dx=h.vecs[0]->begin();
-        for(int i=0;i<n0;i++,__dx+=__dim__,__x+=__dim__)
-            Algebra::V_mul_MLT_add_in(__x,h.A,__dx);
-        Algebra::MLT_mul_MLT(atoms->H,h.A,h.A);
-        
-        const int n=atoms->natms_lcl*c_dim;
-        type0* alpha_vec=atoms->alpha->begin();
-        type0*  halpha_vec=h.vecs[1]->begin();
-        type0 r_lcl=1.0,tmp;
-        for(int i=0;i<n;i++)
-        {
-            tmp=alpha_vec[i]+r_lcl*halpha_vec[i];
-            if(tmp<0.0)
-            {
-                r_lcl=-alpha_vec[i]/halpha_vec[i];
-                while(alpha_vec[i]+r_lcl*halpha_vec[i]<=0.0)
-                    r_lcl=nextafter(r_lcl,0.0);
-            }
-        }
-        MPI_Allreduce(&r_lcl,&r,1,Vec<type0>::MPI_T,MPI_MIN,atoms->world);
-        
-        if(r==1.0)
-            x+=h;
-        else
-        {
-            r*=0.5;
-            x+=r*h;
-        }
-        type0 max_alpha_lcl=0.0;
-        
-        
-        type0* c_vec=atoms->c->begin();
-        for(int i=0;i<n;i++)
-            if(c_vec[i]>=0.0) max_alpha_lcl=MAX(max_alpha_lcl,alpha_vec[i]);
-        MPI_Allreduce(&max_alpha_lcl,&atoms->max_alpha,1,Vec<type0>::MPI_T,MPI_MAX,atoms->world);
-        
-        atoms->update_H();
-#ifdef OLD_UPDATE
-        dynamic->update(uvecs,2);
-#else
-        dynamic->update<true,true>();
-#endif
-        
-        
-        res_sq=ff->prepJ_n_res(f.vecs[0],f.vecs[1]);
-        type0 vol_neg=-atoms->vol;
-        
-        Algebra::DoLT<__dim__>::func([&res_sq,&f,this,&vol_neg](int i,int j)
-         {
-             if(!std::isnan(S[i][j]))
-             {
-                 f.A[i][j]=ff->F_H[i][j]-S[i][j]*vol_neg;
-                 res_sq+=f.A[i][j]*f.A[i][j];
-             }
-             else
-                 f.A[i][j]=0.0;
-         });
-
-        res=sqrt(res_sq);
-        
-    }
-    if(istep) nerr_mins++;
-}
-/*--------------------------------------------
- 
- --------------------------------------------*/
-void DAE::min_error_false()
-{
-#ifdef MINCG_W_NEWTON
-    int __step=atoms->step;
-    min->run(10000);
-    atoms->step=__step;
-#endif
-    
-    VecTens<type0,2> x(atoms,false,atoms->H,atoms->x,atoms->alpha);
-    VecTens<type0,2> f(atoms,false,ff->F_H,ff->f,ff->f_alpha);
-    VecTens<type0,2> h(atoms,false,__dim__,c_dim);
-
-#ifndef NEW_UPDTAE
-    vec* uvecs[2];
-    uvecs[0]=atoms->x;
-    uvecs[1]=atoms->alpha;
-#endif
-    type0 norm,res,res_sq;
-    
-    __GMRES__<VecTens<type0,2>> gmres(max_ngmres_iters,atoms,false,__dim__,c_dim);
+    __GMRES__<VecTens<type0,2>> gmres(max_ngmres_iters,atoms,chng_box,__dim__,c_dim);
     auto J=[this](VecTens<type0,2>& x,VecTens<type0,2>& Jx)->void
     {
-#ifdef OLD_UPDATE
-        dynamic->update(x.vecs[0]);
-        dynamic->update(x.vecs[1]);
-#else
-        dynamic->update(x.vecs[0],x.vecs[1]);
-#endif
+        ff->J_timer(x,Jx);
         
-        ff->J(x.vecs[0],x.vecs[1],Jx.vecs[0],Jx.vecs[1]);
-
+        if(chng_box)
+        {
+            type0 dlog_vol=0.0;
+            type0 (&H)[__dim__][__dim__]=atoms->H;
+        
+            Algebra::Do<__dim__>::func([&H,&x,&dlog_vol](int i)
+            {
+                dlog_vol+=x.A[i][i]/H[i][i];
+            });
+    
+            type0 tmp=dlog_vol*atoms->vol;
+            Algebra::DoLT<__dim__>::func([&Jx,&tmp,this](int i,int j)
+            {
+                if(!S_dof[i][j]) Jx.A[i][j]=0.0;
+                else Jx.A[i][j]-=S[i][j]*tmp;
+            });
+        }
     };
     
-    res_sq=ff->prepJ_n_res(f.vecs[0],f.vecs[1]);
-    res=sqrt(res_sq);
-    
+    res=chng_box ? ff->prep_timer(f,S):ff->prep_timer(f);
     type0 r;
     int istep=0;
-    for(;istep<max_nnewton_iters && res/a_tol_sqrt_nx_nalpha_nS_dof>1.0;istep++)
+    for(;istep<max_nnewton_iters && res/a_tol_sqrt_nx_nalpha_dof>1.0;istep++)
     {
-        gmres.solve(J,f,0.005*a_tol_sqrt_nx_nalpha_nS_dof,norm,h);
+        /*
+        if(atoms->comm_rank==0)
+            printf("%d  %e  %e %e %e %e %e %e\n",istep,res/a_tol_sqrt_nc_dofs
+                   ,atoms->S_fe[0][0]
+                   ,atoms->S_fe[1][1]
+                   ,atoms->S_fe[2][2]
+                   ,atoms->S_fe[1][2]
+                   ,atoms->S_fe[2][0]
+                   ,atoms->S_fe[0][1]);
+        
+        */
+        /*
+        if(atoms->comm_rank==0)
+            printf("%d | %d  %e | %e | %0.13lf\n",istep,gmres.iter,gmres.res/(0.005*a_tol_sqrt_nc_dofs),res/a_tol_sqrt_nc_dofs,atoms->fe);
+         */
+        gmres.solve(J,f,0.005*a_tol_sqrt_nx_nalpha_dof,norm,h);
         
         
         const int n=atoms->natms_lcl*c_dim;
@@ -403,7 +235,7 @@ void DAE::min_error_false()
                 r_lcl=-alpha_vec[i]/halpha_vec[i];
                 while(alpha_vec[i]+r_lcl*halpha_vec[i]<=0.0)
                     r_lcl=nextafter(r_lcl,0.0);
-            }
+            }            
         }
         MPI_Allreduce(&r_lcl,&r,1,Vec<type0>::MPI_T,MPI_MIN,atoms->world);
 
@@ -421,19 +253,18 @@ void DAE::min_error_false()
         for(int i=0;i<n;i++)
             if(c_vec[i]>=0.0) max_alpha_lcl=MAX(max_alpha_lcl,alpha_vec[i]);
         MPI_Allreduce(&max_alpha_lcl,&atoms->max_alpha,1,Vec<type0>::MPI_T,MPI_MAX,atoms->world);
-
-#ifdef OLD_UPDATE
+        
+        if(chng_box)
+            atoms->update_H();
+        
         dynamic->update(uvecs,2);
-#else
-        dynamic->update<true,true>();
-#endif
         
-        
-        res_sq=ff->prepJ_n_res(f.vecs[0],f.vecs[1]);
-        res=sqrt(res_sq);
+        res=chng_box ? ff->prep_timer(f,S):ff->prep_timer(f);
         
     }
-    if(istep) nerr_mins++;
+    nerr_mins++;
+    //printf("%d res %e %e\n",istep,a0,a1);
+    //if(atoms->comm_rank==0 && res/a_tol_sqrt_nc_dofs>1.0) printf("res %e\n",res/a_tol_sqrt_nc_dofs);
 }
 /*------------------------------------------------------------------------------------------------------------------------------------
  
@@ -967,7 +798,7 @@ void DAE::ml_Jtest(PyMethodDef& tp_methods)
             
             printf("%d\n",ivec);
             
-            ff->prep_timer(f.vecs[0],f.vecs[0]);
+            ff->prep_timer(f);
             
             
             dFs[ivec]=f-f0;

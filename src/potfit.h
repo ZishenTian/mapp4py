@@ -336,7 +336,7 @@ template<class FF,size_t NELEMS>
 type0 PotFit<FF,NELEMS>::cost_en_S_f()
 {
     type0 err_lcl,err_lcl_lcl;
-    type0* curr_val=ff->derivative();
+    type0* curr_val=ff->derivative_timer();
     my_sa_err=curr_val[0]-target[0];
     type0* f_vec=ff->f->begin();
     err_lcl_lcl=0.0;
@@ -637,11 +637,7 @@ void PotFit<FF,NELEMS>::restore_x0()
     memcpy(atoms->x->begin(),X0.vecs[0]->begin(),sizeof(type0)*__dim__*atoms->natms_lcl);
     memcpy(&atoms->H[0][0],&X0.A[0][0],sizeof(type0)*__dim__*__dim__);
     atoms->update_H();
-#ifdef OLD_UPDATE
     min->dynamic->update(atoms->x);
-#else
-    min->dynamic->update<true>();
-#endif
 }
 /*--------------------------------------------
  just one test run
@@ -652,11 +648,7 @@ void PotFit<FF,NELEMS>::full_reset()
     memcpy(atoms->x->begin(),Xorig.vecs[0]->begin(),sizeof(type0)*__dim__*atoms->natms_lcl);
     memcpy(&atoms->H[0][0],&Xorig.A[0][0],sizeof(type0)*__dim__*__dim__);
     atoms->update_H();
-#ifdef OLD_UPDATE
     min->dynamic->update(atoms->x);
-#else
-    min->dynamic->update<true>();
-#endif
 }
 /*--------------------------------------------
  
@@ -1674,7 +1666,7 @@ void PotFit<FF,NELEMS>::ml_mean_rho(PyMethodDef& tp_methods)
         sz=potfit->nconfigs;
         
         potfit->init();
-        potfit->ff->derivative();
+        potfit->ff->derivative_timer();
         type0* v=potfit->get_mean_rho(f.val<0>());
         potfit->fin();
         

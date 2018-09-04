@@ -17,7 +17,7 @@ using namespace MAPP_NS;
 /*--------------------------------------------
  constructor
  --------------------------------------------*/
-GCMC::GCMC(AtomsMD*& __atoms,ForceFieldMD*&__ff,DynamicMD*& __dynamic,elem_type __gas_type,type0 __mu,type0 __T,int seed):
+GCMC::GCMC(AtomsMD*& __atoms,ForceFieldMD*&__ff,DynamicMD*& __dynamic,elem_type __gas_type,type0 __mu,type0 __T,type0 __xlo,type0 __xhi,type0 __ylo,type0 __yhi,type0 __zlo,type0 __zhi,int seed):
 atoms(__atoms),
 ff(__ff),
 world(__atoms->comm.world),
@@ -25,6 +25,12 @@ dynamic(__dynamic),
 gas_type(__gas_type),
 mu(__mu),
 T(__T),
+xlo(__xlo),
+xhi(__xhi),
+ylo(__ylo),
+yhi(__yhi),
+zlo(__zlo),
+zhi(__zhi),
 cut_sq(__ff->cut_sq),
 s_hi(__atoms->comm.s_hi),
 s_lo(__atoms->comm.s_lo),

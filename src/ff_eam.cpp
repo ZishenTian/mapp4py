@@ -61,7 +61,7 @@ ForceFieldEAM::~ForceFieldEAM()
 /*--------------------------------------------
  force calculation
  --------------------------------------------*/
-void ForceFieldEAM::__force_calc()
+void ForceFieldEAM::force_calc()
 {
     if(max_pairs<neighbor->no_pairs)
     {
@@ -189,8 +189,8 @@ void ForceFieldEAM::__force_calc()
         __vec_lcl[0]+=tmp0;
         dF[iatm]=tmp1;
     }
-
-    update(dF_ptr);
+    
+    dynamic->update(dF_ptr);
 
     
     istart=0;
@@ -240,7 +240,7 @@ void ForceFieldEAM::__force_calc()
 /*--------------------------------------------
  energy calculation
  --------------------------------------------*/
-void ForceFieldEAM::__energy_calc()
+void ForceFieldEAM::energy_calc()
 {
     type0* xvec=atoms->x->begin();
     type0* rho=rho_ptr->begin();

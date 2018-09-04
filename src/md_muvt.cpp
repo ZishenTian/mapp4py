@@ -8,10 +8,16 @@
 /*--------------------------------------------
  
  --------------------------------------------*/
-MDMuVT::MDMuVT(type0 __mu,type0 __T,type0 __dt,std::string __gas_elem_name,int __seed):
+MDMuVT::MDMuVT(type0 __mu,type0 __T,type0 __dt,std::string __gas_elem_name,int __seed, type0 __xlo, type0 __xhi, type0 __ylo, type0 __yhi, type0 __zlo, type0 __zhi):
 MDNVT(__T,__dt),
 seed(__seed),
 mu(__mu),
+xlo(__xlo),
+xhi(__xhi),
+ylo(__ylo),
+yhi(__yhi),
+zlo(__zlo),
+zhi(__zhi),
 nevery(1000),
 nattempts(1000),
 gas_elem_name(__gas_elem_name)
@@ -255,7 +261,8 @@ void MDMuVT::run(int nsteps)
     
     int step=atoms->step;
     
-    PGCMC gcmc(atoms,ff,dynamic,1,atoms->elements.find(gas_elem_name.c_str()),mu,T,seed);
+//  PGCMC gcmc(atoms,ff,dynamic,1,atoms->elements.find(gas_elem_name.c_str()),mu,T,seed);
+    PGCMC gcmc(atoms,ff,dynamic,1,atoms->elements.find(gas_elem_name.c_str()),mu,T,xlo,xhi,ylo,yhi,zlo,zhi,seed);
     gcmc.init();
     type0 gas_frac=static_cast<type0>(gcmc.ngas)/static_cast<type0>(atoms->natms);
 #ifdef GCMCDEBUG
@@ -268,7 +275,7 @@ void MDMuVT::run(int nsteps)
     }
 #endif
     
-    ff->force_calc();
+    ff->force_calc_timer();
     
     int nevery_xprt=xprt==NULL ? 0:xprt->nevery;
     if(nevery_xprt) xprt->write(step);
@@ -303,19 +310,11 @@ void MDMuVT::run(int nsteps)
         update_x_d__x(fac_x_d);
         
         if((istep+1)%nevery)
-#ifdef OLD_UPDATE
             dynamic->update(atoms->x);
-#else
-            dynamic->update<true>();
-#endif
         else
         {
 #ifdef GCMCDEBUG
-#ifdef OLD_UPDATE
             dynamic->update(atoms->x);
-#else
-            dynamic->update<true>();
-#endif
             ff->force_calc_timer();
             delta_u=atoms->pe;
 #endif
@@ -326,7 +325,7 @@ void MDMuVT::run(int nsteps)
             T_part=Algebra::Tr_DyadicV<__dim__>(mvv)/(ndof_part*kB);
         }
 
-        ff->force_calc();
+        ff->force_calc_timer();
         
 #ifdef GCMCDEBUG
         if((istep+1)%nevery==0)
@@ -384,15 +383,25 @@ PyObject* MDMuVT::__new__(PyTypeObject* type,PyObject* args,PyObject* kwds)
  --------------------------------------------*/
 int MDMuVT::__init__(PyObject* self,PyObject* args,PyObject* kwds)
 {
-    FuncAPI<type0,type0,type0,std::string,int> f("__init__",{"mu","T","dt","gas_element","seed"});
+//
+    FuncAPI<type0,type0,type0,std::string,int, type0, type0, type0, type0, type0, type0> f("__init__",{"mu","T","dt","gas_element","seed", "xlo", "xhi", "ylo", "yhi", "zlo", "zhi"});
     
     f.logics<1>()[0]=VLogics("gt",0.0);
     f.logics<2>()[0]=VLogics("gt",0.0);
     f.logics<4>()[0]=VLogics("gt",0);
+//
+//    f.logics<6>()[0]=VLogics("gt",0.0);
+//    f.logics<7>()[0]=VLogics("gt",0.0);
+//    f.logics<8>()[0]=VLogics("gt",0.0);
+//    f.logics<9>()[0]=VLogics("gt",0.0);
+//    f.logics<10>()[0]=VLogics("gt",0.0);
+//    f.logics<11>()[0]=VLogics("gt",0.0);
+    
     if(f(args,kwds)==-1) return -1;
     
     Object* __self=reinterpret_cast<Object*>(self);
-    __self->md=new MDMuVT(f.val<0>(),f.val<1>(),f.val<2>(),f.val<3>(),f.val<4>());
+//
+    __self->md=new MDMuVT(f.val<0>(),f.val<1>(),f.val<2>(),f.val<3>(),f.val<4>(),f.val<5>(),f.val<6>(),f.val<7>(),f.val<8>(),f.val<9>(),f.val<10>());
     __self->xprt=NULL;
     
     return 0;
@@ -474,7 +483,9 @@ int MDMuVT::setup_tp()
     return ichk;
 }
 /*--------------------------------------------*/
-PyGetSetDef MDMuVT::getset[]=EmptyPyGetSetDef(5);
+// PyGetSetDef MDMuVT::getset[]=EmptyPyGetSetDef(5);
+
+PyGetSetDef MDMuVT::getset[]=EmptyPyGetSetDef(11);
 /*--------------------------------------------*/
 void MDMuVT::setup_tp_getset()
 {

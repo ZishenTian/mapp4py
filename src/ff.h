@@ -7,29 +7,16 @@
 #include "global.h"
 #include "comm.h"
 #include "atoms.h"
-#include "exchange.h"
+
 namespace MAPP_NS
 {
     class ForceField
     {
     private:
     protected:
-        Update* updt;
-#ifdef OLD_UPDATE
-        void update(vec* __v)
-        {
-            updt->update(__v,false);
-        }
-#else
-        template<class...VS>
-        void update(VS*&... __vs)
-        {
-            updt->update_wo_x(__vs...);
-        }
-#endif
         const size_t nelems;
-        virtual void __force_calc()=0;
-        virtual void __energy_calc()=0;
+        virtual void force_calc()=0;
+        virtual void energy_calc()=0;
         
         type0 __vec[__nvoigt__+1];
         type0 __vec_lcl[__nvoigt__+1];
@@ -50,8 +37,9 @@ namespace MAPP_NS
         type0** cut_sk_sq;
         
 
-        virtual type0 value()=0;
-        virtual type0* derivative()=0;
+        virtual type0 value_timer()=0;
+        virtual type0* derivative_timer()=0;
+        //virtual void derivative_timer(type0(*&)[__dim__])=0;
         
     };
 }

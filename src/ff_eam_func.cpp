@@ -44,7 +44,7 @@ ForceFieldEAMFunc::~ForceFieldEAMFunc()
 /*--------------------------------------------
  force and energy calculation
  --------------------------------------------*/
-void ForceFieldEAMFunc::__force_calc()
+void ForceFieldEAMFunc::force_calc()
 {
     const type0* x=atoms->x->begin();
     elem_type* evec=atoms->elem->begin();
@@ -81,8 +81,7 @@ void ForceFieldEAMFunc::__force_calc()
         __vec_lcl[0]+=eam_func->F(ielem,rho[iatm]);
     }
     
-    update(rho_ptr);
-
+    dynamic->update(rho_ptr);
     
     type0* fvec=f->begin();
     for(int iatm=0;iatm<natms_lcl;iatm++)
@@ -116,7 +115,7 @@ void ForceFieldEAMFunc::__force_calc()
  minimization/linesearch methods that do not
  use derivatives of energy
  --------------------------------------------*/
-void ForceFieldEAMFunc::__energy_calc()
+void ForceFieldEAMFunc::energy_calc()
 {
     const type0* x=atoms->x->begin();
     elem_type* evec=atoms->elem->begin();

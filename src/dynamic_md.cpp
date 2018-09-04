@@ -37,13 +37,15 @@ void DynamicMD::init()
     store_arch_vecs();
     create_dynamic_vecs();
     x0=new Vec<type0>(atoms,__dim__,"x0");
+
+    ff->dynamic=this;
     ff->init();
     ff->neighbor->init();
     atoms->max_cut=ff->max_cut+atoms->comm.skin;
     
     xchng=new Exchange(atoms,nxchng_vecs_full);
     updt=new Update(atoms,nupdt_vecs_full,nxchng_vecs_full);
-    ff->updt=updt;
+    
     atoms->x2s_lcl();
     xchng->full_xchng();
     updt->reset();
@@ -59,7 +61,7 @@ void DynamicMD::fin()
 {
     ff->neighbor->fin();
     ff->fin();
-
+    
     delete updt;
     delete xchng;
     delete x0;
@@ -84,15 +86,10 @@ void DynamicMD::store_x0()
     if(chng_box) last_atm+=atoms->natms_ph;
     memcpy(x0->begin(),atoms->x->begin(),last_atm*__dim__*sizeof(type0));
 }
-
 /*--------------------------------------------
  
  --------------------------------------------*/
-#ifdef OLD_UPDATE
-inline
-#else
-#endif
-bool DynamicMD::decide()
+inline bool DynamicMD::decide()
 {
     type0 skin_sq=0.25*skin*skin;
     int succ,succ_lcl=1;
@@ -108,7 +105,6 @@ bool DynamicMD::decide()
     if(succ) return true;
     return false;
 }
-#ifdef OLD_UPDATE
 /*--------------------------------------------
  update one vectors
  --------------------------------------------*/
@@ -173,8 +169,6 @@ void DynamicMD::update(vec** updt_vecs,int nupdt_vecs)
         store_x0();
     }
 }
-#else
-#endif
 /*--------------------------------------------
  
  --------------------------------------------*/
@@ -193,13 +187,3 @@ void DynamicMD::fin_xchng()
     ff->neighbor->create_list(chng_box);
     store_x0();
 }
-#ifdef OLD_UPDATE
-#else
-/*--------------------------------------------
- 
- --------------------------------------------*/
-void DynamicMD::neighboring()
-{
-    ff->neighbor->create_list(chng_box);
-}
-#endif

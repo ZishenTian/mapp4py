@@ -13,6 +13,7 @@
 #include "min_styles.h"
 #include "dae_styles.h"
 #include "export_styles.h"
+#include "newton_gmres.h"
 #ifdef POTFIT
 #include "potfit.h"
 #include "potfit_o.h"
@@ -146,9 +147,7 @@ PyObject* MAPP::init_module(void)
 #ifdef MAPP_DEBUG_MODE
         fclose(mapp_debug);
 #endif
-        int mpi_finalized;
-        MPI_Finalized(&mpi_finalized);
-        if(!mpi_finalized) MPI_Finalize();
+        MPI_Finalize();
     });
     
     PyObject* posixpath=PyImport_ImportModule("posixpath");
@@ -325,8 +324,6 @@ PyObject* MAPP::DMD::init_module(void)
     if(MinCGDMD::setup_tp()<0) return NULL;
     PyModule_AddObject(module_ob,"min_cg",reinterpret_cast<PyObject*>(&MinCGDMD::TypeObject));
     
-    if(MinCG3DMD::setup_tp()<0) return NULL;
-    PyModule_AddObject(module_ob,"min_cg3",reinterpret_cast<PyObject*>(&MinCG3DMD::TypeObject));
     
     if(MinLBFGSDMD::setup_tp()<0) return NULL;
     PyModule_AddObject(module_ob,"min_lbfgs",reinterpret_cast<PyObject*>(&MinLBFGSDMD::TypeObject));
@@ -334,6 +331,9 @@ PyObject* MAPP::DMD::init_module(void)
     
     if(DAEBDF::setup_tp()<0) return NULL;
     PyModule_AddObject(module_ob,"bdf",reinterpret_cast<PyObject*>(&DAEBDF::TypeObject));
+    
+    if(NewtonGMRES::setup_tp()<0) return NULL;
+    PyModule_AddObject(module_ob,"newton_gmres",reinterpret_cast<PyObject*>(&NewtonGMRES::TypeObject));
     
     if(ExportDMD::setup_tp()<0) return NULL;
     PyModule_AddObject(module_ob,"export",reinterpret_cast<PyObject*>(&ExportDMD::TypeObject));

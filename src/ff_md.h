@@ -9,9 +9,9 @@ namespace MAPP_NS
     private:
         void reset();
     protected:
+        class DynamicMD* dynamic;
         class AtomsMD* atoms;
-
-
+        
         
         virtual void pre_xchng_energy(class GCMC*)=0;
         virtual type0 xchng_energy(class GCMC*)=0;
@@ -29,16 +29,15 @@ namespace MAPP_NS
         type0 max_cut;
         class NeighborMD* neighbor;
         Vec<type0>* f;
-        type0 F_H[__dim__][__dim__];
         
         ForceFieldMD(class AtomsMD*);
         virtual ~ForceFieldMD();
         
         
-        void force_calc();
+        void force_calc_timer();
 
-        type0 value();
-        type0* derivative();
+        type0 value_timer();
+        type0* derivative_timer();
         //void derivative_timer(type0(*&)[__dim__]);
         //void derivative_timer(bool,type0(*&)[__dim__]);
         

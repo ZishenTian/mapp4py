@@ -252,7 +252,7 @@ void ForceFieldEAMFit::sort_AR_ij(type0*& A_ij,type0*& R_ij,size_t sz)
 /*--------------------------------------------
  force and energy calculation
  --------------------------------------------*/
-void ForceFieldEAMFit::__force_calc()
+void ForceFieldEAMFit::force_calc()
 {
     type0* xvec=atoms->x->begin();
     type0* fvec=f->begin();
@@ -301,9 +301,8 @@ void ForceFieldEAMFit::__force_calc()
     {
         printf("%.16lf %.16lf %.16lf %.16lf\n",xvec[3*i],xvec[3*i+1],xvec[3*i+2],rho[i]);
     }*/
-
-    update(rho_ptr);
-
+    
+    dynamic->update(rho_ptr);
 
     //printf("------------------------------------------\n");
     for(iatm=0;iatm<natms_lcl;iatm++)
@@ -351,7 +350,7 @@ void ForceFieldEAMFit::__force_calc()
  minimization/linesearch methods that do not
  use derivatives of energy
  --------------------------------------------*/
-void ForceFieldEAMFit::__energy_calc()
+void ForceFieldEAMFit::energy_calc()
 {
     type0* xvec=atoms->x->begin();
     type0* rho=rho_ptr->begin();
@@ -440,9 +439,9 @@ void ForceFieldEAMFit::prep4deriv()
         }
     }
     
-    update(rho_ptr);
-
     
+    
+    dynamic->update(rho_ptr);
     type0* S=S_ptr->begin();
     for(int i=0;i<natms_lcl*__nvoigt__;i++)
         S[i]=0.0;

@@ -101,12 +101,9 @@ void MDNVT::update_x_d__x__x_d(type0 fac_x_d)
         Algebra::Do<__dim__>::func([&dx,&x](const int j){x[j]-=dx[j];});
     
     
-#ifdef OLD_UPDATE
+    
     dynamic->update(atoms->x);
-#else
-    dynamic->update<true>();
-#endif
-    ff->force_calc();
+    ff->force_calc_timer();
     
     f=ff->f->begin();
     x_d=atoms->x_d->begin();
@@ -171,12 +168,9 @@ void MDNVT::update_x_d__x__x_d_w_dof(type0 fac_x_d)
         Algebra::Do<__dim__>::func([&dx,&x,&dof](const int j){if(dof[j]) x[j]-=dx[j];});
     
     
-#ifdef OLD_UPDATE
+    
     dynamic->update(atoms->x);
-#else
-    dynamic->update<true>();
-#endif
-    ff->force_calc();
+    ff->force_calc_timer();
     
     f=ff->f->begin();
     x_d=atoms->x_d->begin();
@@ -352,7 +346,7 @@ void MDNVT::run(int nsteps)
 {
     int step=atoms->step;
     
-    ff->force_calc();
+    ff->force_calc_timer();
     
     int nevery_xprt=xprt==NULL ? 0:xprt->nevery;
     if(nevery_xprt) xprt->write(step);

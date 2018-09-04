@@ -181,7 +181,7 @@ void ForceFieldFS::ml_new(PyMethodDef& tp_methods)
 /*--------------------------------------------
  force and energy calculation
  --------------------------------------------*/
-void ForceFieldFS::__force_calc()
+void ForceFieldFS::force_calc()
 {
     type0* xvec=atoms->x->begin();
     type0* fvec=f->begin();
@@ -230,8 +230,8 @@ void ForceFieldFS::__force_calc()
         }
     }
     
-    update(rho_ptr);
-
+    dynamic->update(rho_ptr);
+    
     for(iatm=0;iatm<natms_lcl;iatm++)
     {
         ielem=evec[iatm];
@@ -335,7 +335,7 @@ void ForceFieldFS::__force_calc()
  minimization/linesearch methods that do not
  use derivatives of energy
  --------------------------------------------*/
-void ForceFieldFS::__energy_calc()
+void ForceFieldFS::energy_calc()
 {
     type0* xvec=atoms->x->begin();
     type0* rho=rho_ptr->begin();

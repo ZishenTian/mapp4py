@@ -33,7 +33,7 @@ void MinLBFGSDMD::init()
     x.~VecTens();
     new (&x) VecTens<type0,2>(atoms,chng_box,atoms->H,atoms->x,atoms->alpha);
     f.~VecTens();
-    new (&f) VecTens<type0,2>(atoms,chng_box,ff->F_H,ff->f,ff->f_alpha);
+    new (&f) VecTens<type0,2>(atoms,chng_box,ff->f,ff->f_alpha);
     h.~VecTens();
     new (&h) VecTens<type0,2>(atoms,chng_box,__dim__,c_dim);
     x0.~VecTens();
@@ -70,11 +70,9 @@ void MinLBFGSDMD::init()
     
     Memory::alloc(rho,m);
     Memory::alloc(alpha,m);
-#ifdef OLD_UPDATE
     uvecs[0]=atoms->x;
     uvecs[1]=atoms->alpha;
-#else
-#endif
+    
     if(xprt)
     {
         try
@@ -100,11 +98,10 @@ void MinLBFGSDMD::fin()
         xprt->fin();
         xprt->atoms=NULL;
     }
-#ifdef OLD_UPDATE
+    
     uvecs[1]=NULL;
     uvecs[0]=NULL;
-#else
-#endif
+    
     Memory::dealloc(alpha);
     Memory::dealloc(rho);
     rho=alpha=NULL;

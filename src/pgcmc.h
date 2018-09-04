@@ -146,7 +146,8 @@ namespace MAPP_NS
         
         
     public:
-        PGCMC(class AtomsMD*&, class ForceFieldMD*&,class DynamicMD*&,int,elem_type,type0,type0,int);
+//
+        PGCMC(class AtomsMD*&, class ForceFieldMD*&,class DynamicMD*&,int,elem_type,type0,type0,type0,type0,type0,type0,type0,type0,int);
         ~PGCMC();
         
         void init();

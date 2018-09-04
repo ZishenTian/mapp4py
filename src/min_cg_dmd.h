@@ -34,10 +34,8 @@ namespace MAPP_NS
         class DynamicDMD* dynamic;
         class ExportDMD* xprt;
         void print_error();
-#ifdef OLD_UPDATE
+        
         vec* uvecs[2];
-#else
-#endif
         void pre_run_chk(AtomsDMD*,ForceFieldDMD*);
         
     public:
@@ -55,6 +53,7 @@ namespace MAPP_NS
         type0 dF(type0,type0&);
         void ls_prep(type0&,type0&,type0&);
         void F_reset();
+        void refine(int,int);
         typedef struct
         {
             PyObject_HEAD
@@ -72,6 +71,7 @@ namespace MAPP_NS
         static PyMethodDef methods[];
         static void setup_tp_methods();
         static void ml_run(PyMethodDef&);
+        static void ml_refine(PyMethodDef&);
         
         static PyGetSetDef getset[];
         static void setup_tp_getset();

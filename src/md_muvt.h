@@ -11,6 +11,13 @@ namespace MAPP_NS
         std::string gas_elem_name;
         int nevery;
         int nattempts;
+	
+	type0 xlo;
+	type0 xhi;
+	type0 ylo;
+	type0 yhi;
+	type0 zlo;
+	type0 zhi;
     protected:
         void update_x_d__x(type0);
         void update_x_d__x_w_dof(type0);
@@ -19,7 +26,8 @@ namespace MAPP_NS
         void pre_run_chk(AtomsMD*,ForceFieldMD*);
         void pre_init();
     public:
-        MDMuVT(type0,type0,type0,std::string,int);
+//	
+        MDMuVT(type0,type0,type0,std::string,int, type0,type0,type0,type0,type0,type0);
         ~MDMuVT();
         void init();
         void run(int);
@@ -50,6 +58,13 @@ namespace MAPP_NS
         static void getset_nattempts(PyGetSetDef&);
         static void getset_seed(PyGetSetDef&);
         static void getset_gas_element(PyGetSetDef&);
+        
+	static void getset_xlo(PyGetSetDef&);
+        static void getset_xhi(PyGetSetDef&);
+        static void getset_ylo(PyGetSetDef&);
+        static void getset_yhi(PyGetSetDef&);
+        static void getset_zlo(PyGetSetDef&);
+        static void getset_zhi(PyGetSetDef&);
         
         
         static int setup_tp();

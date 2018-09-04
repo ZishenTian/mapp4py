@@ -16,8 +16,8 @@ using namespace MAPP_NS;
 /*--------------------------------------------
  constructor
  --------------------------------------------*/
-SGCMC::SGCMC(AtomsMD*& __atoms,ForceFieldMD*&__ff,DynamicMD*& __dynamic,int __m,elem_type __gas_type,type0 __mu,type0 __T,int seed):
-GCMC(__atoms,__ff,__dynamic,__gas_type,__mu,__T,seed),
+SGCMC::SGCMC(AtomsMD*& __atoms,ForceFieldMD*&__ff,DynamicMD*& __dynamic,int __m,elem_type __gas_type,type0 __mu,type0 __T,type0 __xlo, type0 __xhi, type0 __ylo, type0 __yhi, type0 __zlo, type0 __zhi, int seed):
+GCMC(__atoms,__ff,__dynamic,__gas_type,__mu,__T,__xlo, __xhi, __ylo, __yhi, __zlo, __zhi, seed),
 m(__m)
 {
     s_x_buff=NULL;

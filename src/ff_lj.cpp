@@ -156,7 +156,7 @@ void ForceFieldLJ::post_xchng_energy(GCMC*)
  force and energy calculation
  --------------------------------------------*/
 #include "xmath.h"
-void ForceFieldLJ::__force_calc()
+void ForceFieldLJ::force_calc()
 {
     const type0* x=atoms->x->begin();
     type0* fvec=f->begin();
@@ -214,7 +214,7 @@ void ForceFieldLJ::__force_calc()
  minimization/linesearch methods that do not
  use derivatives of energy
  --------------------------------------------*/
-void ForceFieldLJ::__energy_calc()
+void ForceFieldLJ::energy_calc()
 {
     const type0* x=atoms->x->begin();
     elem_type* evec=atoms->elem->begin();

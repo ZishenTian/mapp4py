@@ -708,7 +708,7 @@ void ForceFieldEAMDMDSCC::sc_loop()
 /*--------------------------------------------
  force calculation
  --------------------------------------------*/
-void ForceFieldEAMDMDSCC::prep(Vec<type0>*,Vec<type0>*)
+void ForceFieldEAMDMDSCC::prep(VecTens<type0,2>& f)
 {}
 /*--------------------------------------------
  

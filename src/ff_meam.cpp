@@ -80,7 +80,7 @@ void ForceFieldMEAM::post_xchng_energy(GCMC*)
 /*--------------------------------------------
  force and energy calculation
  --------------------------------------------*/
-void ForceFieldMEAM::__force_calc()
+void ForceFieldMEAM::force_calc()
 {
 
     
@@ -94,7 +94,7 @@ void ForceFieldMEAM::__force_calc()
  minimization/linesearch methods that do not
  use derivatives of energy
  --------------------------------------------*/
-void ForceFieldMEAM::__energy_calc()
+void ForceFieldMEAM::energy_calc()
 {
 }
 /*--------------------------------------------

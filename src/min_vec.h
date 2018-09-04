@@ -28,13 +28,13 @@ namespace MAPP_NS
     private:
     protected:
     public:
-        Vec<T>* vecs[N==0 ? 1:N];
-        bool vecs_alloc[N==0 ? 1:N];
+        Vec<T>* vecs[N];
+        bool vecs_alloc[N];
         
         T (*A)[__dim__];
         bool A_alloc;
         
-        bool A_dof;
+        bool chng_box;
         VecTens();
         ~VecTens();
         template<class ...Ts>
@@ -46,11 +46,6 @@ namespace MAPP_NS
         VecTens(const VecTens&);
         VecTens(VecTens&&);
         VecTens& operator=(VecTens&&);
-        
-        void assign(Atoms*,int)
-        {
-        
-        }
         
         template<class... Ts>
         void assign(Atoms* atoms,int i,Vec<T>* v,Ts... vs )
@@ -249,15 +244,6 @@ namespace MAPP_NS
             }
         }
     };
-    template<const int N>
-    class VecOp<N,-1>
-    {
-    public:
-        template<class T,class E,class F>
-        static inline void func(VecTens<T,N>&,const VecTensExpr<T,N,E>&,F)
-        {
-        }
-    };
 }
 
 using namespace MAPP_NS;
@@ -291,12 +277,12 @@ VecTens<T,N>::~VecTens()
  
  --------------------------------------------*/
 template<typename T,const int N>template<class... Ts>
-VecTens<T,N>::VecTens(Atoms* atoms,bool __A_dof,Ts... vs):
-A_dof(__A_dof)
+VecTens<T,N>::VecTens(Atoms* atoms,bool __chng_box,Ts... vs):
+chng_box(__chng_box)
 {
     static_assert(sizeof...(Ts)==N,"not enough vecs");
     A_alloc=false;
-    if(__A_dof)
+    if(__chng_box)
     {
         A=new T[__dim__][__dim__];
         A_alloc=true;
@@ -307,8 +293,8 @@ A_dof(__A_dof)
  
  --------------------------------------------*/
 template<typename T,const int N>template<class... Ts>
-VecTens<T,N>::VecTens(Atoms* atoms,bool __A_dof,T(&__A)[__dim__][__dim__],Ts... vs):
-A_dof(__A_dof),
+VecTens<T,N>::VecTens(Atoms* atoms,bool __chng_box,T(&__A)[__dim__][__dim__],Ts... vs):
+chng_box(__chng_box),
 A_alloc(false),
 A(__A)
 {
@@ -321,7 +307,7 @@ A(__A)
  --------------------------------------------*/
 template<typename T,const int N>
 VecTens<T,N>::VecTens(const VecTens<T,N>& r):
-A_dof(r.A_dof)
+chng_box(r.chng_box)
 {
     Algebra::Do<N>::func([this,&r](int i)
     {
@@ -330,7 +316,7 @@ A_dof(r.A_dof)
         memcpy(vecs[i]->begin(),r.vecs[i]->begin(),vecs[i]->dim*r.vecs[i]->atoms->natms_lcl*sizeof(T));
     });
     A_alloc=false;
-    if(A_dof)
+    if(chng_box)
     {
         A_alloc=true;
         A=new T[__dim__][__dim__];
@@ -342,7 +328,7 @@ A_dof(r.A_dof)
  --------------------------------------------*/
 template<typename T,const int N>
 VecTens<T,N>::VecTens(VecTens<T,N>&& r):
-A_dof(r.A_dof)
+chng_box(r.chng_box)
 {
     Algebra::Do<N>::func([this,&r](int i)
     {
@@ -363,7 +349,7 @@ A_dof(r.A_dof)
 template<typename T,const int N>
 VecTens<T,N>& VecTens<T,N>::operator=(VecTens<T,N>&& r)
 {
-    A_dof=r.A_dof;
+    chng_box=r.chng_box;
     Algebra::Do<N>::func([this,&r](int i)
     {
         vecs_alloc[i]=r.vecs_alloc[i];
@@ -397,7 +383,7 @@ T VecTens<T,N>::operator*(const VecTens<T,N>& r)
     
     T ans;
     MPI_Allreduce(&ans_lcl,&ans,1,Vec<T>::MPI_T,MPI_SUM,vecs[0]->atoms->world);
-    if(A_dof)
+    if(chng_box)
         Algebra::DoLT<__dim__>::func([this,&r,&ans](int i,int j){ans+=this->A[i][j]*r.A[i][j];});
     return ans;
 }
@@ -418,7 +404,7 @@ VecTens<T,N>& VecTens<T,N>::operator*=(const T& scl)
     });
     
 
-    if(A_dof)
+    if(chng_box)
         Algebra::DoLT<__dim__>::func([this,&scl](int i,int j){this->A[i][j]*=scl;});
     return *this;
 }
@@ -429,7 +415,7 @@ template<typename T,const int N>template<class E>
 VecTens<T,N>& VecTens<T,N>::operator+=(const VecTensExpr<T,N,E>& expr)
 {
     VecOp<N>::func(*this,expr,[](T& l,const T& r){l+=r;});
-    if(A_dof)
+    if(chng_box)
         Algebra::DoLT<__dim__>::func([this,&expr](int i,int j){this->A[i][j]+=expr(i,j);});
     return *this;
 }
@@ -448,7 +434,7 @@ VecTens<T,N>& VecTens<T,N>::operator+=(const VecTens<T,N>& r)
         for(int i=0;i<natms_lcl*dim;i++)
             v0[i]+=v1[i];
     });
-    if(A_dof)
+    if(chng_box)
         Algebra::DoLT<__dim__>::func([this,&r](int i,int j){this->A[i][j]+=r.A[i][j];});
     return *this;
 }
@@ -459,7 +445,7 @@ template<typename T,const int N>template<class E>
 VecTens<T,N>& VecTens<T,N>::operator-=(const VecTensExpr<T,N,E>& expr)
 {
     VecOp<N>::func(*this,expr,[](T& l,const T& r){l-=r;});
-    if(A_dof)
+    if(chng_box)
         Algebra::DoLT<__dim__>::func([this,&expr](int i,int j){this->A[i][j]-=expr(i,j);});
     return *this;
 }
@@ -478,7 +464,7 @@ VecTens<T,N>& VecTens<T,N>::operator-=(const VecTens<T,N>& r)
         for(int i=0;i<natms_lcl*dim;i++)
             v0[i]-=v1[i];
     });
-    if(A_dof)
+    if(chng_box)
         Algebra::DoLT<__dim__>::func([this,&r](int i,int j){this->A[i][j]-=r.A[i][j];});
     return *this;
 }
@@ -489,7 +475,7 @@ template<typename T,const int N>template<class E>
 VecTens<T,N>& VecTens<T,N>::operator=(const VecTensExpr<T,N,E>& expr)
 {
     VecOp<N>::func(*this,expr,[](T& l,const T& r){l=r;});
-    if(A_dof)
+    if(chng_box)
         Algebra::DoLT<__dim__>::func([this,&expr](int i,int j){this->A[i][j]=expr(i,j);});
     return *this;
 }
@@ -508,7 +494,7 @@ VecTens<T,N>& VecTens<T,N>::operator=(const VecTens<T,N>& r)
         for(int i=0;i<natms_lcl*dim;i++)
             v0[i]=v1[i];
     });
-    if(A_dof)
+    if(chng_box)
         Algebra::DoLT<__dim__>::func([this,&r](int i,int j){this->A[i][j]=r.A[i][j];});
     return *this;
 }
@@ -526,7 +512,7 @@ void VecTens<T,N>::cyclic_shift(int n)
         
         this->vecs[j]=__v;
     });
-    if(A_dof)
+    if(chng_box)
     {
         T(*__A)[__dim__]=(this+n-1)->A;
         for(int i=n-1;i>0;i--)
@@ -559,7 +545,7 @@ namespace MAPP_NS
     public:
         Vec<T>* vec;
         T (*A)[__dim__];
-        bool A_dof;
+        bool chng_box;
         unsigned int alloc_flag;
         
         __VecTens();
@@ -656,7 +642,7 @@ template<typename T>
 __VecTens<T>::__VecTens():
 vec(NULL),
 A(NULL),
-A_dof(false),
+chng_box(false),
 alloc_flag(0)
 {
 }
@@ -679,10 +665,10 @@ __VecTens<T>::~__VecTens()
  
  --------------------------------------------*/
 template<typename T>
-__VecTens<T>::__VecTens(Atoms* __atoms,Vec<T>*& __vec,T(&__A)[__dim__][__dim__],bool __A_dof):
+__VecTens<T>::__VecTens(Atoms* __atoms,Vec<T>*& __vec,T(&__A)[__dim__][__dim__],bool __chng_box):
 vec(__vec),
 A(__A),
-A_dof(__A_dof),
+chng_box(__chng_box),
 alloc_flag(0)
 {
 }
@@ -690,22 +676,22 @@ alloc_flag(0)
  
  --------------------------------------------*/
 template<typename T>
-__VecTens<T>::__VecTens(Atoms* __atoms,Vec<T>*& __vec,bool __A_dof):
+__VecTens<T>::__VecTens(Atoms* __atoms,Vec<T>*& __vec,bool __chng_box):
 vec(__vec),
-A(__A_dof?new T[__dim__][__dim__]:NULL),
-A_dof(__A_dof),
-alloc_flag(__A_dof?2:0)
+A(__chng_box?new T[__dim__][__dim__]:NULL),
+chng_box(__chng_box),
+alloc_flag(__chng_box?2:0)
 {
 }
 /*--------------------------------------------
  
  --------------------------------------------*/
 template<typename T>
-__VecTens<T>::__VecTens(Atoms* __atoms,bool __A_dof):
+__VecTens<T>::__VecTens(Atoms* __atoms,bool __chng_box):
 vec(new Vec<T>(__atoms,__atoms->x->dim)),
-A(__A_dof ? new T[__dim__][__dim__]:NULL),
-A_dof(__A_dof),
-alloc_flag(__A_dof?3:1)
+A(__chng_box ? new T[__dim__][__dim__]:NULL),
+chng_box(__chng_box),
+alloc_flag(__chng_box?3:1)
 {
 }
 /*--------------------------------------------
@@ -714,7 +700,7 @@ alloc_flag(__A_dof?3:1)
 template<typename T>
 __VecTens<T>::__VecTens(__VecTens&& other):
 vec(other.vec),
-A_dof(other.A_dof),
+chng_box(other.chng_box),
 A(other.A),
 alloc_flag(other.alloc_flag)
 {
@@ -728,7 +714,7 @@ alloc_flag(other.alloc_flag)
 template<typename T>
 __VecTens<T>::__VecTens(const __VecTens& other):
 vec(other.vec),
-A_dof(other.A_dof),
+chng_box(other.chng_box),
 A(other.A),
 alloc_flag(other.alloc_flag)
 {
@@ -755,7 +741,7 @@ T __VecTens<T>::operator*(const __VecTens<T>& rhs)
         ans_lcl+=vec0[i]*vec1[i];
     
     MPI_Allreduce(&ans_lcl,&ans,1,Vec<T>::MPI_T,MPI_SUM,this->vec->atoms->world);
-    if(!A_dof) return ans;
+    if(!chng_box) return ans;
     Algebra::DoLT<__dim__>::func([this,&rhs,&ans](int i,int j)
     {ans+=this->A[i][j]*rhs.A[i][j];});
     return ans;
@@ -770,7 +756,7 @@ __VecTens<T>& __VecTens<T>::operator*=(T& a)
     const int n=this->vec->atoms->natms_lcl*this->vec->dim;
     for(int i=0;i<n;i++)
         vec0[i]*=a;
-    if(!A_dof) return *this;
+    if(!chng_box) return *this;
     Algebra::DoLT<__dim__>::func([this,&a](int i,int j)
     {this->A[i][j]*=a;});
     return *this;
@@ -787,8 +773,8 @@ __VecTens<T>& __VecTens<T>::operator=(__VecTens&& other)
     other.A=NULL;
     this->alloc_flag=other.alloc_flag;
     other.alloc_flag=0;
-    this->A_dof=other.A_dof;
-    other.A_dof=false;
+    this->chng_box=other.chng_box;
+    other.chng_box=false;
     return *this;
 }
 /*--------------------------------------------
@@ -798,7 +784,7 @@ template<typename T>
 __VecTens<T>& __VecTens<T>::operator=(const __VecTens& other)
 {
     memcpy(this->vec->begin(),other.vec->begin(),this->vec->atoms->natms_lcl*this->vec->dim*sizeof(T));
-    if(!A_dof) return *this;
+    if(!chng_box) return *this;
     Algebra::DoLT<__dim__>::func([this,&other](int i,int j)
     {this->A[i][j]=other.A[i][j];});
     return *this;
@@ -814,7 +800,7 @@ __VecTens<T>& __VecTens<T>::operator-=(const __VecTens& other)
     const int n=this->vec->atoms->natms_lcl*this->vec->dim;
     for(int i=0;i<n;i++) vec0[i]-=vec1[i];
     
-    if(!A_dof) return *this;
+    if(!chng_box) return *this;
     T (&__A)[__dim__][__dim__]=other.vec_tens.A;
     Algebra::DoLT<__dim__>::func([this,__A](int i,int j)
     {this->A[i][j]-=__A[i][j];});
@@ -831,7 +817,7 @@ __VecTens<T>& __VecTens<T>::operator+=(const __VecTens& other)
     const int n=this->vec->atoms->natms_lcl*this->vec->dim;
     for(int i=0;i<n;i++) vec0[i]+=vec1[i];
     
-    if(!A_dof) return *this;
+    if(!chng_box) return *this;
     T (&__A)[__dim__][__dim__]=other.vec_tens.A;
     Algebra::DoLT<__dim__>::func([this,__A](int i,int j)
     {this->A[i][j]+=__A[i][j];});
@@ -847,7 +833,7 @@ __VecTens<T>& __VecTens<T>::operator=(const __VecTensExpr<T,E>&& other)
     const int n=this->vec->atoms->natms_lcl*this->vec->dim;
     for(int i=0;i<n;i++)
         vec0[i]=other[i];
-    if(!A_dof) return *this;
+    if(!chng_box) return *this;
     Algebra::DoLT<__dim__>::func([this,&other](int i,int j)
     {this->A[i][j]=other(i,j);});
     return *this;
@@ -862,7 +848,7 @@ __VecTens<T>& __VecTens<T>::operator-=(const __VecTensExpr<T,E>&& other)
     const int n=this->vec->atoms->natms_lcl*this->vec->dim;
     for(int i=0;i<n;i++)
         vec0[i]-=other[i];
-    if(!A_dof) return *this;
+    if(!chng_box) return *this;
     Algebra::DoLT<__dim__>::func([this,&other](int i,int j)
     {this->A[i][j]-=other(i,j);});
     return *this;
@@ -877,7 +863,7 @@ __VecTens<T>& __VecTens<T>::operator+=(const __VecTensExpr<T,E>&& other)
     const int n=this->vec->atoms->natms_lcl*this->vec->dim;
     for(int i=0;i<n;i++)
         vec0[i]+=other[i];
-    if(!A_dof) return *this;
+    if(!chng_box) return *this;
     Algebra::DoLT<__dim__>::func([this,&other](int i,int j)
     {this->A[i][j]+=other(i,j);});
     return *this;

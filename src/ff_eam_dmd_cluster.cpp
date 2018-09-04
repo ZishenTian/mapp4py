@@ -136,7 +136,7 @@ void ForceFieldEAMDMDCLUSTER::calc_pair(type0 r,type0* alpha_i,type0* alpha_j,ty
 /*--------------------------------------------
  force calculation
  --------------------------------------------*/
-void ForceFieldEAMDMDCLUSTER::__force_calc()
+void ForceFieldEAMDMDCLUSTER::force_calc()
 {
     if(max_pairs<neighbor->no_pairs)
     {
@@ -308,7 +308,8 @@ void ForceFieldEAMDMDCLUSTER::__force_calc()
         
         ent_lcl+=calc_ent(cv_i);
     }
-    update(dE_ptr);
+    
+    dynamic->update(dE_ptr);
     
     ___sc_loop();
     __vec_lcl[0]+=vib_lcl;
@@ -374,7 +375,7 @@ void ForceFieldEAMDMDCLUSTER::__force_calc()
 /*--------------------------------------------
  energy calculation
  --------------------------------------------*/
-void ForceFieldEAMDMDCLUSTER::__energy_calc()
+void ForceFieldEAMDMDCLUSTER::energy_calc()
 {
     if(max_pairs<neighbor->no_pairs)
     {
@@ -538,8 +539,8 @@ void ForceFieldEAMDMDCLUSTER::__energy_calc()
         ent_lcl+=calc_ent(cv_i);
     }
     
-    update(dE_ptr);
-
+    dynamic->update(dE_ptr);
+    
     ___sc_loop();
     __vec_lcl[0]+=vib_lcl;
     __vec_lcl[1+__nvoigt__]+=ent_lcl;
@@ -780,12 +781,11 @@ void ForceFieldEAMDMDCLUSTER::sc_loop()
         
         en_diff=fabs(curr_en-prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
+        dynamic->update(dE_ptr);
     }
     
     
-    update(b_ptr);
-
+    dynamic->update(b_ptr);
     type0* theta=theta_ptr->begin();
     type0* d=d_ptr->begin();
     for(int i=0;i<natms_lcl+atoms->natms_ph;i++) theta[i]=c[2*i];
@@ -813,8 +813,7 @@ void ForceFieldEAMDMDCLUSTER::sc_loop()
     }
     
     MPI_Allreduce(&curr_fe_lcl,&curr_fe,1,Vec<type0>::MPI_T,MPI_SUM,world);
-    update(b_ptr);
-
+    dynamic->update(d_ptr);
     type0 prev_fe=curr_fe;
 
     
@@ -893,8 +892,7 @@ void ForceFieldEAMDMDCLUSTER::sc_loop()
             //printf("theta[%d] %e %e %e| %e %e\n",i,theta[i],d[i],b[i],curr_fe_lcl,0.5*(theta[i]*d[i]-b[i]));
         }
         
-        update(d_ptr);
-
+        dynamic->update(d_ptr);
         MPI_Allreduce(&curr_fe_lcl,&curr_fe,1,Vec<type0>::MPI_T,MPI_SUM,world);
         
         en_diff=fabs(curr_fe-prev_fe);
@@ -1151,8 +1149,7 @@ void ForceFieldEAMDMDCLUSTER::_sc_loop()
         
         en_diff=fabs(curr_en-prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
-
+        dynamic->update(dE_ptr);
     }
     
     
@@ -1323,8 +1320,7 @@ void ForceFieldEAMDMDCLUSTER::__sc_loop()
         en_diff=fabs(curr_en-prev_en);
         //printf("%e %e\n",curr_en,prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
-
+        dynamic->update(dE_ptr);
     }
     
 #ifdef SC_DMD
@@ -1561,11 +1557,10 @@ void ForceFieldEAMDMDCLUSTER::___sc_loop()
         en_diff=fabs(curr_en-prev_en);
         //printf("%e %e\n",curr_en,prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
-
+        dynamic->update(dE_ptr);
     }
     
-#ifdef SC_DMD
+ #ifdef SC_DMD
     atoms->BB=tt;
 #endif
     
@@ -1574,12 +1569,12 @@ void ForceFieldEAMDMDCLUSTER::___sc_loop()
 /*--------------------------------------------
  force calculation
  --------------------------------------------*/
-void ForceFieldEAMDMDCLUSTER::__prepJ_n_res(Vec<type0>*,Vec<type0>*)
+void ForceFieldEAMDMDCLUSTER::prep(VecTens<type0,2>& f)
 {}
 /*--------------------------------------------
  
  --------------------------------------------*/
-void ForceFieldEAMDMDCLUSTER::__J(Vec<type0>*,Vec<type0>*,Vec<type0>*,Vec<type0>*)
+void ForceFieldEAMDMDCLUSTER::J(VecTens<type0,2>& Dx,VecTens<type0,2>& ADx)
 {}
 /*--------------------------------------------
  init

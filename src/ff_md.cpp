@@ -95,33 +95,33 @@ void ForceFieldMD::post_xchng_energy_timer(GCMC* gcmc)
 /*--------------------------------------------
  
  --------------------------------------------*/
-void ForceFieldMD::force_calc()
+void ForceFieldMD::force_calc_timer()
 {
     reset();
-    __force_calc();
-    MPI_Allreduce(__vec_lcl,__vec,__nvoigt__+1,Vec<type0>::MPI_T,MPI_SUM,world);
-    Algebra::Do<__nvoigt__>::func([this](int i){__vec[i+1]*=-1.0;});
-    Algebra::DyadicV_2_MSY(__vec+1,F_H);
-    atoms->pe=__vec[0];
-    type0 vol_neg=-atoms->vol;
-    Algebra::Do<__nvoigt__>::func([this,&vol_neg](int i){__vec[i+1]/=vol_neg;});
-    Algebra::DyadicV_2_MSY(__vec+1,atoms->S_pe);
+    force_calc();
     
     if(!dof_empty)
     {
         type0* fvec=f->begin();
         bool* dof=atoms->x_dof->begin();
-        const int n=atoms->natms_lcl*__dim__;
-        for(int i=0;i<n;i++) fvec[i]=dof[i] ? fvec[i]:0.0;
+        const int natms_lcl=atoms->natms_lcl;
+        for(int i=0;i<natms_lcl;i++,fvec+=__dim__,dof+=__dim__)
+            Algebra::Do<__dim__>::func([&dof,&fvec](int i){fvec[i]=dof[i] ? fvec[i]:0.0;});
     }
+    
+    MPI_Allreduce(__vec_lcl,__vec,__nvoigt__+1,Vec<type0>::MPI_T,MPI_SUM,world);
+    const type0 vol=atoms->vol;
+    Algebra::Do<__nvoigt__>::func([this,&vol](int i){__vec[i+1]/=vol;});
+    atoms->pe=__vec[0];
+    Algebra::DyadicV_2_MSY(__vec+1,atoms->S_pe);
 }
 /*--------------------------------------------
  
  --------------------------------------------*/
-type0 ForceFieldMD::value()
+type0 ForceFieldMD::value_timer()
 {
     __vec_lcl[0]=0.0;
-    __energy_calc();
+    energy_calc();
     type0 en;
     MPI_Allreduce(&__vec_lcl[0],&en,1,Vec<type0>::MPI_T,MPI_SUM,world);
     return en;
@@ -129,16 +129,13 @@ type0 ForceFieldMD::value()
 /*--------------------------------------------
  
  --------------------------------------------*/
-type0* ForceFieldMD::derivative()
+type0* ForceFieldMD::derivative_timer()
 {
     reset();
-    __force_calc();
+    force_calc();
     MPI_Allreduce(__vec_lcl,__vec,__nvoigt__+1,Vec<type0>::MPI_T,MPI_SUM,world);
-    Algebra::Do<__nvoigt__>::func([this](int i){__vec[i+1]*=-1.0;});
-    Algebra::DyadicV_2_MSY(__vec+1,F_H);
+    Algebra::Do<__nvoigt__>::func([this](int i){__vec[i+1]/=atoms->vol;});
     atoms->pe=__vec[0];
-    type0 vol_neg=-atoms->vol;
-    Algebra::Do<__nvoigt__>::func([this,&vol_neg](int i){__vec[i+1]/=vol_neg;});
     Algebra::DyadicV_2_MSY(__vec+1,atoms->S_pe);
     
     if(!dof_empty)

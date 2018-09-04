@@ -247,7 +247,7 @@ type0& b,type0& c,type0& fa,type0& fb,type0& fc)
         if(fb>=fa)
         {
             // last ditch effort
-            b=sqrt_epsilon<max_a ? sqrt_epsilon:max_a;
+            b=sqrt_epsilon;
             fb=func->F(b);
             if(fb>=fa)
                 return B_F_DOWNHILL;

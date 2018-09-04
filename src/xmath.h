@@ -1243,12 +1243,6 @@ namespace MAPP_NS
                 *dst+=*src;
                 __V_add<dim-1>::func(src+1,dst+1);
             }
-            template<typename T>
-            static inline void func2(T const * src0,T const * src1,T* dst)
-            {
-                *dst+=(*src0+*src1);
-                __V_add<dim-1>::func2(src0+1,src1+1,dst+1);
-            }
         };
         
         template<>
@@ -1259,11 +1253,6 @@ namespace MAPP_NS
             static inline void func(T const * src,T* dst)
             {
                 *dst+=*src;
-            }
-            template<typename T>
-            static inline void func2(T const * src0,T const * src1,T* dst)
-            {
-                *dst+=(*src0+*src1);
             }
         };
         
@@ -1277,12 +1266,6 @@ namespace MAPP_NS
                 *dst-=*src;
                 __V_sub<dim-1>::func(src+1,dst+1);
             }
-            template<typename T>
-            static inline void func2(T const * src0,T const * src1,T* dst)
-            {
-                *dst-=(*src0+*src1);
-                __V_sub<dim-1>::func2(src0+1,src1+1,dst+1);
-            }
         };
         
         template<>
@@ -1293,11 +1276,6 @@ namespace MAPP_NS
             static inline void func(T const * src,T* dst)
             {
                 *dst-=*src;
-            }
-            template<typename T>
-            static inline void func2(T const * src0,T const * src1,T* dst)
-            {
-                *dst-=(*src0+*src1);
             }
         };
         
@@ -1380,38 +1358,6 @@ namespace MAPP_NS
             }
         };
         
-        template<const int dim>
-        class __V_set
-        {
-        public:
-            template<typename T>
-            static inline void func(T* v,const T& val)
-            {
-                *v=val;
-                __V_set<dim-1>::func(v+1,val);
-            }
-        };
-        
-        template<>
-        class __V_set<1>
-        {
-        public:
-            template<typename T>
-            static inline void func(T* v,const T& val)
-            {
-                *v=val;
-            }
-        };
-        
-        template<>
-        class __V_set<0>
-        {
-        public:
-            template<typename T>
-            static inline void func(T*,const T&)
-            {
-            }
-        };
         
         
         template<const int dim,const int strd>
@@ -2855,13 +2801,6 @@ namespace MAPP_NS
             template<typename FuncType>
             static inline void func(FuncType f){f(0);}
         };
-        template <>
-        class Do<0>
-        {
-        public:
-            template<typename FuncType>
-            static inline void func(FuncType){}
-        };
         
         
         template <const int i,const int j=i>
@@ -3017,12 +2956,6 @@ namespace MAPP_NS
         void zero(T* V)
         {
             __V_zero<dim>::func(V);
-        }
-        /*==========================================================================*/
-        template<const int dim,typename T>
-        void set(T* V,const T& val)
-        {
-            __V_set<dim>::func(V,val);
         }
         /*==========================================================================*/
         template<const int dim,typename T>
@@ -3306,21 +3239,11 @@ namespace MAPP_NS
         {
             __V_add<dim>::func(src,dst);
         }
-        template<const int dim,typename T>
-        void V_add2(T const * src0,T const * src1,T* dst)
-        {
-            __V_add<dim>::func2(src0,src1,dst);
-        }
         /*==========================================================================*/
         template<const int dim,typename T>
         void V_sub(T const * src,T* dst)
         {
             __V_sub<dim>::func(src,dst);
-        }
-        template<const int dim,typename T>
-        void V_sub2(T const * src0,T const * src1,T* dst)
-        {
-            __V_sub<dim>::func2(src0,src1,dst);
         }
         /*==========================================================================*/
         template<const int dim,typename T>

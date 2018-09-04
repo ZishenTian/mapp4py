@@ -17,8 +17,8 @@ using namespace MAPP_NS;
 /*--------------------------------------------
  constructor
  --------------------------------------------*/
-PGCMC::PGCMC(AtomsMD*& __atoms,ForceFieldMD*&__ff,DynamicMD*& __dynamic,int __m,elem_type __gas_type,type0 __mu,type0 __T,int seed):
-GCMC(__atoms,__ff,__dynamic,__gas_type,__mu,__T,seed),
+PGCMC::PGCMC(AtomsMD*& __atoms,ForceFieldMD*&__ff,DynamicMD*& __dynamic,int __m,elem_type __gas_type,type0 __mu,type0 __T,type0 __xlo, type0 __xhi,type0 __ylo, type0 __yhi, type0 __zlo, type0 __zhi,int seed):
+GCMC(__atoms,__ff,__dynamic,__gas_type,__mu,__T,__xlo, __xhi, __ylo, __yhi, __zlo, __zhi, seed),
 m(__m)
 {
     n_comm=0;
@@ -1178,9 +1178,12 @@ void PGCMC::decide()
     type0 fac;
     if(gcmc_mode[0]==INS_MODE)
     {
+// 
+      if (s_buff [0][0] > xlo && s_buff [0][0] < xhi && s_buff[0][1] > ylo && s_buff[0][1] < yhi && s_buff[0][2] > zlo && s_buff[0][2] < zhi)
+       { 
         fac=z_fac*vol_lcl/(static_cast<type0>(ngas_lcl+1)*exp(beta*delta_u));
         if(lcl_random->uniform()<fac)
-        {
+         {
             
 #ifdef GCMCDEBUG
             tot_delta_u_lcl+=delta_u;
@@ -1205,7 +1208,7 @@ void PGCMC::decide()
             }
 
 
-            
+         }    
         }
 
     }

@@ -133,7 +133,7 @@ void ForceFieldEAMDMDSC::calc_pair(type0 r,type0* alpha_i,type0* alpha_j,type0*&
 /*--------------------------------------------
  force calculation
  --------------------------------------------*/
-void ForceFieldEAMDMDSC::__force_calc()
+void ForceFieldEAMDMDSC::force_calc()
 {
     if(max_pairs<neighbor->no_pairs)
     {
@@ -300,8 +300,7 @@ void ForceFieldEAMDMDSC::__force_calc()
         ent_lcl+=calc_ent(cv_i);
     }
     
-    update(dE_ptr);
-
+    dynamic->update(dE_ptr);
     
     //sc_loop___();
     
@@ -367,7 +366,7 @@ void ForceFieldEAMDMDSC::__force_calc()
 /*--------------------------------------------
  energy calculation
  --------------------------------------------*/
-void ForceFieldEAMDMDSC::__energy_calc()
+void ForceFieldEAMDMDSC::energy_calc()
 {
     if(max_pairs<neighbor->no_pairs)
     {
@@ -527,8 +526,7 @@ void ForceFieldEAMDMDSC::__energy_calc()
         ent_lcl+=calc_ent(cv_i);
     }
     
-    update(dE_ptr);
-
+    dynamic->update(dE_ptr);
     
     //sc_loop___();
 
@@ -754,7 +752,7 @@ void ForceFieldEAMDMDSC::sc_loop___()
         en_diff=fabs(curr_en-prev_en);
         //printf("%e %e\n",curr_en,prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
+        dynamic->update(dE_ptr);
     }
 #ifdef SC_DMD
     atoms->BB=tt;
@@ -985,7 +983,7 @@ void ForceFieldEAMDMDSC::sc_loop()
         en_diff=fabs(curr_en-prev_en);
         //printf("%e %e\n",curr_en,prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
+        dynamic->update(dE_ptr);
     }
     
 #ifdef SC_DMD
@@ -1248,8 +1246,7 @@ void ForceFieldEAMDMDSC::sc_loop__Z6_2nd()
         MPI_Allreduce(__vec_lcl,&curr_en,1,Vec<type0>::MPI_T,MPI_SUM,world);
         en_diff=fabs(curr_en-prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
-
+        dynamic->update(dE_ptr);
     }
     
     //printf("npairs %d\n",npairs);
@@ -1429,8 +1426,7 @@ void ForceFieldEAMDMDSC::sc_loop__()
         MPI_Allreduce(__vec_lcl,&curr_en,1,Vec<type0>::MPI_T,MPI_SUM,world);
         en_diff=fabs(curr_en-prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
-
+        dynamic->update(dE_ptr);
     }
     
     
@@ -1623,8 +1619,7 @@ void ForceFieldEAMDMDSC::sc_loop_cluster()
         MPI_Allreduce(__vec_lcl,&curr_en,1,Vec<type0>::MPI_T,MPI_SUM,world);
         en_diff=fabs(curr_en-prev_en);
         prev_en=curr_en;
-        update(dE_ptr);
-
+        dynamic->update(dE_ptr);
     }
     
     type0 __q=0.0,__l=0.0,__n=0.0;
@@ -1849,12 +1844,12 @@ void ForceFieldEAMDMDSC::sc_loop_cluster()
 /*--------------------------------------------
  force calculation
  --------------------------------------------*/
-void ForceFieldEAMDMDSC::__prepJ_n_res(Vec<type0>*,Vec<type0>*)
+void ForceFieldEAMDMDSC::prep(VecTens<type0,2>& f)
 {}
 /*--------------------------------------------
  
  --------------------------------------------*/
-void ForceFieldEAMDMDSC::__J(Vec<type0>*,Vec<type0>*,Vec<type0>*,Vec<type0>*)
+void ForceFieldEAMDMDSC::J(VecTens<type0,2>& Dx,VecTens<type0,2>& ADx)
 {}
 /*--------------------------------------------
  init

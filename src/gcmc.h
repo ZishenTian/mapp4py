@@ -59,7 +59,9 @@ namespace MAPP_NS
         type0 vol;
         //constants
         type0 gas_mass,beta,kbT,T,mu,lambda,sigma,z_fac;
+        type0 xlo,xhi,ylo,yhi,zlo,zhi;
         
+         
         int& natms_lcl;
         int& natms_ph;
         type0 cut;
@@ -114,7 +116,7 @@ namespace MAPP_NS
         type0 tot_delta_u_lcl;
 #endif
     public:
-        GCMC(class AtomsMD*&, class ForceFieldMD*&,class DynamicMD*&,elem_type,type0,type0,int);
+        GCMC(class AtomsMD*&, class ForceFieldMD*&,class DynamicMD*&,elem_type,type0,type0,type0,type0,type0,type0,type0,type0,int);
         virtual ~GCMC();
         
         virtual void init();

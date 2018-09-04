@@ -17,9 +17,8 @@ int main(int nargs,char* args[])
     PyImport_AppendInittab("mapp",MAPP_NS::MAPP::init_module);
     Py_Main(nargs,__args);
     delete [] __args;
-    int mpi_finalized;
-    MPI_Finalized(&mpi_finalized);
-    if(!mpi_finalized) MPI_Finalize();
+    
+    MPI_Finalize();
     return EXIT_SUCCESS;
 }
 #else
@@ -30,9 +29,8 @@ int main(int nargs,char* args[])
     MPI_Init(&nargs, &args);
     PyImport_AppendInittab("mapp",MAPP_NS::initmapp);
     Py_Main(nargs,args);
-    int mpi_finalized;
-    MPI_Finalized(&mpi_finalized);
-    if(!mpi_finalized) MPI_Finalize();    return EXIT_SUCCESS;
+    MPI_Finalize();
+    return EXIT_SUCCESS;
 }
 #endif
 

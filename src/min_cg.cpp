@@ -32,9 +32,16 @@ type0 MinCG::calc_ndofs()
  --------------------------------------------*/
 void MinCG::force_calc()
 {
-    ff->derivative();
+    ff->derivative_timer();
+
     if(chng_box)
-        Algebra::DoLT<__dim__>::func([this](int i,int j){f.A[i][j]=H_dof[i][j] ? f.A[i][j]:0.0;});
+    {
+        type0 (&S_pe)[__dim__][__dim__]=atoms->S_pe;
+        type0 neg_v=-atoms->vol;
+        Algebra::DoLT<__dim__>::func([this,&S_pe,&neg_v](int i,int j)
+        {f.A[i][j]=H_dof[i][j] ? S_pe[i][j]*neg_v:0.0;});
+        
+    }
 }
 /*--------------------------------------------
  
@@ -73,7 +80,7 @@ void MinCG::init()
     x.~VecTens();
     new (&x) VecTens<type0,1>(atoms,chng_box,atoms->H,atoms->x);
     f.~VecTens();
-    new (&f) VecTens<type0,1>(atoms,chng_box,ff->F_H,ff->f);
+    new (&f) VecTens<type0,1>(atoms,chng_box,ff->f);
     h.~VecTens();
     new (&h) VecTens<type0,1>(atoms,chng_box,__dim__);
     x0.~VecTens();
@@ -139,7 +146,7 @@ void MinCG::ff_test(int seed,type0 __max_dx,type0 __max_st,int __n_desc)
     x.~VecTens();
     new (&x) VecTens<type0,1>(atoms,chng_box,atoms->H,atoms->x);
     f.~VecTens();
-    new (&f) VecTens<type0,1>(atoms,chng_box,ff->F_H,ff->f);
+    new (&f) VecTens<type0,1>(atoms,chng_box,ff->f);
     h.~VecTens();
     new (&h) VecTens<type0,1>(atoms,chng_box,__dim__);
     x0.~VecTens();
@@ -222,12 +229,9 @@ type0 MinCG::F(type0 alpha)
     x=x0+alpha*x_d;
     if(chng_box)
     atoms->update_H();
-#ifdef OLD_UPDATE
+    
     dynamic->update(atoms->x);
-#else
-    dynamic->update<true>();
-#endif
-    return ff->value();
+    return ff->value_timer();
 }
 /*--------------------------------------------
  inner product of f and h
@@ -237,11 +241,8 @@ type0 MinCG::dF(type0 alpha,type0& drev)
     x=x0+alpha*x_d;
     if(chng_box)
         atoms->update_H();
-#ifdef OLD_UPDATE
+    
     dynamic->update(atoms->x);
-#else
-    dynamic->update<true>();
-#endif
     force_calc();
     
     drev=-(f*h);
@@ -296,11 +297,7 @@ void MinCG::F_reset()
 {
     x=x0;
     if(chng_box) atoms->update_H();
-#ifdef OLD_UPDATE
     dynamic->update(atoms->x);
-#else
-    dynamic->update<true>();
-#endif
 }
 /*------------------------------------------------------------------------------------------------------------------------------------
  
