@@ -10,3 +10,4 @@ MAPP is a parallel atomistic simulation package written entirely in C++, it is p
   * Parallel Grand Canonical Monte Carlo (pGCMC) for pair and many body potentials such as EAM
   
   For documentation and usage please visit http://www.mit.edu/~sinam/mapp
+try git
